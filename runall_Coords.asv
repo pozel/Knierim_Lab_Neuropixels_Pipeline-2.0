@@ -1,0 +1,28 @@
+%% Run All Coords in Folder
+% Written by: PO, March 2023
+function [dataPath] = runall_Coords(dataPath)
+
+%% Get all files that need to run through SGLXMetaToCoords.m
+
+% Find subfolders of raw data
+allFiles = rdir(dataPath);
+allFiles_str = string(allFiles);
+p=1;
+for i = 1:length(allFiles_str)
+    %get Coords path, need metadata file
+    if ~isempty(strfind(allFiles_str{i,1},'.meta')) && ~isempty(strfind(allFiles_str{i,1},'ap'))
+        CoordsFiles{p,1} = allFiles_str{i,1};
+        p=p+1;
+    else
+        %pass
+    end
+end
+
+%% Run SGLXMetaToCoords.m
+
+for ii = 1:length(CoordsFiles)
+    SGLXMetaToCoords(CoordsFiles(ii));
+    close all; %figures generated are not saved
+    display(sprintf('Finished creating coordinates file for %s.',CoordsFiles));
+end
+end

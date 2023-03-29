@@ -1,0 +1,123 @@
+%% Run All TPrime in Folder
+% Note: Run after CatGT
+% Written by: PO, March 2023
+function [dataPath] = runall_TPrime(dataPath)
+
+%% Get all files that need to run through CatGT
+allFiles = rdir(dataPath);
+allFiles_str = string(allFiles);
+p=1;
+k=1;
+for i = 1:length(allFiles_str)
+    if isempty(strfind(allFiles_str{i,1},'_tcat'))
+        %pass
+    else
+        NIch_str = extractBetween(allFiles_str{i,1},'nidq.','.txt');
+        APch_str = extractBetween(allFiles_str{i,1},'tcat.imec','0.txt'); %adding 0 here, make sure your "ap.xdd._384_6_500 matches 0 character ending
+        if ~isempty(APch_str)
+            APch_dataFile = APch_str{1,1};
+        elseif ~isempty(NIch_str)
+            NIch_dataFiles{p,1} = NIch_str{1,1};
+            p=p+1;
+        elseif ~isempty(strfind(allFiles_str{i,1},'.ap.meta')) && ~isempty(strfind(allFiles_str{i,1},'catgt'))
+            str = extractBetween(allFiles_str{i,1},'catgt','\');
+            dataFiles{k,1} = str{1,1};
+            k=k+1;
+        else
+            %pass
+        end
+    end
+end
+
+NIch_dataFiles = unique(NIch_dataFiles);
+
+for kk = 1:length(dataFiles)
+for n = 1:length(NIch_dataFiles)
+%% Create runit.bat file
+    
+    TPrime_Folder = 'C:\SpikeGLX\TPrime'; % EDIT your catGT folder
+    cd 'C:\SpikeGLX\TPrime'              % EDIT your catGT folder
+    mainDir_str1 = [dataPath '\'];
+    mainDir_str2 = strrep(mainDir_str1,'\','\\');
+    mainDir_str3 = strrep(mainDir_str2,'\\\\','\\');
+    if ~contains(mainDir_str3,'catgt')
+        mainDir = strrep(extractBefore(mainDir_str3,'catgt'),'\\', '/');
+        subFolder = dataFiles{kk,1}(2:end);
+        mainDir = strrep(mainDir_str3,'\\', '/');
+        mainDir = [mainDir subFolder];
+    else
+        mainDir = strrep(mainDir_str3,'\\', '/');
+        subFolder = dataFiles{kk,1}(2:end);
+    end
+
+    TPrimeidx = find(cellfun(@isempty,strfind(NIch_dataFiles,'500'))==0,1);
+    TPrime_ChannelsList = NIch_dataFiles(1:end ~= TPrimeidx);
+    for tl = 1:length(TPrime_ChannelsList)
+        %TPrimepart1 = ({'@echo off' '%\n'});
+        %TPrimepart1_str = sprintf('%s\n',TPrimepart1{:}); %get part 1
+        
+        TPrimepart2 = (['TPrime -syncperiod=1.000000']); %get part 2
+        
+        % EDIT You'll need to configure here to extract the ni channels you want
+        TPrimepart3 = ({[" -tostream=/" mainDir ["catgt_" subFolder] "/" [subFolder "_tcat.nidq." NIch_dataFiles{TPrimeidx} ".txt "]] ...
+    ["-fromstream=7,/" mainDir ["catgt_" subFolder] "/" [subFolder "_tcat.imec" APch_dataFile "0.txt "]] ... %adding 0 here check earlier comment about ap.xd_384_6_500, if issue
+    ["-events=7,/" mainDir ["catgt_" subFolder] "/" [subFolder "_tcat.nidq." TPrime_ChannelsList{tl} ".txt"] ",/" mainDir ["catgt_" subFolder] "/" [subFolder "_tcat_out.nidq." TPrime_ChannelsList{tl} ".txt ^"]]}); %get part 3
+
+        %TPrimepart4 = ['if [%%1]==[] (set ARGS=%%LOCALARGS%%) else (set ARGS=%%*)']; %get part 4
+        
+        %TPrimepart5 = ['%%~dp0TPrime %%ARGS%%']; %get part 5
+        
+    % You can enable this, but you will have to manually oversee each iteration    
+    %     if exist('runit.bat','file')
+    %         promptMessage = 'Runit.bat file already exists. Do you want to overwrite it?';
+    %         titleBarCaption = 'Overwrite?';
+    %         buttonText = questdlg(promptMessage, titleBarCaption, 'Yes', 'No', 'Yes');
+    %         if strcmpi(buttonText, 'No')
+    %             disp('Did not overwrite runit.bat file.')
+    %         elseif strcmpi(buttonText, 'Yes')
+    %             fileID = fopen('runit.bat','w');
+    %         else
+    %             disp('Did not overwrite runit.bat file.')
+    %         end
+    %     end
+    
+        %TPrime_list = {TPrimepart1_str,TPrimepart2,TPrimepart3_str,TPrimepart4,TPrimepart5};
+        TPrime_list = {TPrimepart2,TPrimepart3};
+
+        fileID = fopen('runit.bat','w');
+        for l = 1:length(TPrime_list)
+            if l == 2 %3
+                for ll = 1:length(TPrimepart3)
+                    fprintf(fileID, sprintf(join(TPrimepart3{ll},"")));
+                    %fprintf(fileID, '\n');
+                end
+                %fprintf(fileID, '\n');
+            else
+                fprintf(fileID, sprintf('%s',TPrime_list{l}));
+%                 if l ~= 2
+%                     %fprintf(fileID, '\n');
+%                 end
+            end
+        end
+        fclose(fileID);
+
+        fid = fopen('runit.bat','rt') ;
+        X = fread(fid) ;
+        fclose(fid) ;
+        X = char(X.') ;
+        Y = strrep(X, '/', '\') ;
+        fid2 = fopen('runit.bat','wt') ;
+        fwrite(fid2,Y) ;
+        fclose (fid2) ;
+
+%% Run batch file in cmd line
+    
+        sys_string = ['runit'];
+        system(['cd ' TPrime_Folder]);
+        system(sys_string);
+        display(sprintf('Subfolder %s found and ran through TPrime.',subFolder)); %#ok<*DSPS> 
+    end
+
+end
+end
+end
