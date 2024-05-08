@@ -1,0 +1,87 @@
+Pipeline 2.0 Updates for NP 2.0 by PO
+
+Differences:
+NP2
+siteJitter = 0 #this is the number of sites to look before or after the end, in case the spike peak occurs further away. Should coordinate with the detect_merge_peaks later
+calculateParms in separate function
+# paramFileSiteStart = siteStart
+# paramFileSiteEnd = siteStart+32
+
+    siteMaskStart = channellist[0]-siteJitter #BUG!! PO site mask not changing across channels
+    siteMaskEnd = channellist[-1]+siteJitter
+    noMask = False
+    noMask_end = False
+    if siteMaskStart<0:
+        siteMaskStart=0
+        noMask = True
+
+    if siteMaskEnd>384: #only see if it exceeds 384, which is the max number of traces for the NP files
+        siteMaskEnd=384
+        noMask_end = True
+
+    if noMask and noMask_end is True:
+        masklist = channellist
+    else:
+        masklist = channellist
+        masklist.insert(0, siteMaskStart)
+        masklist.insert(-1, siteMaskEnd)
+    #note that sites are 1-start in the input! ##HERES IS YOUR INDEXING ERROR
+    #mask is the issue for NP 2.0 map!!!!! need to make True/False vector
+
+        for spikeIdx in tqdm(range(len(timestamps))):
+            # if spikeIdx > 3500:
+            #     break
+            # if spikeIdx%1000==999:
+            #     print(spikeIdx/timestamps)
+            start = (timestamps[spikeIdx].astype('uint32') - before-1)*numBinaryFileChannels
+            end = (timestamps[spikeIdx].astype('uint32') + after-1)*numBinaryFileChannels
+            eventData = dataBinary[start:end].reshape((before+after, numBinaryFileChannels))
+            # outputRawWaveformFile[spikeIdx] = eventData[:, siteStart:siteEnd].T*-1
+            for channelIdx in range(32):
+                outputRawWaveformFile[spikeIdx, channelIdx] = eventData[:, channellist[channelIdx]]*-1
+
+this function is not going to do anything due to sitejitter = 0
+    #applying spatial mask for peak calculation
+    output[0] *= nearbySites[nearbySites[:,0]==peakLocation, 1:][0]    
+
+
+are spikes being assigned to right channels?         for spikeIdx in tqdm(range(len(timestamps))):
+            # if spikeIdx > 3500:
+            #     break
+            # if spikeIdx%1000==999:
+            #     print(spikeIdx/timestamps)
+            start = (timestamps[spikeIdx].astype('uint32') - before-1)*numBinaryFileChannels
+            end = (timestamps[spikeIdx].astype('uint32') + after-1)*numBinaryFileChannels
+            eventData = dataBinary[start:end].reshape((before+after, numBinaryFileChannels))
+            # outputRawWaveformFile[spikeIdx] = eventData[:, siteStart:siteEnd].T*-1
+            for channelIdx in range(32):
+                outputRawWaveformFile[spikeIdx, channelIdx] = eventData[:, channellist[channelIdx]]*-1
+
+
+VP
+siteJitter = 3 #this is the number of sites to look before or after the end, in case the spike peak occurs further away. Should coordinate with the detect_merge_peaks later
+calculateParms is local function
+paramFileSiteStart = siteStart
+paramFileSiteEnd = siteStart+32
+
+siteMaskStart = siteStart-siteJitter
+siteMaskEnd = siteEnd+siteJitter
+if siteMaskStart<0:
+    siteMaskStart=0
+if siteMaskEnd>384: #only see if it exceeds 384, which is the max number of traces for the NP files
+    siteMaskEnd=384
+    
+#note that sites are 1-start in the input!
+mask = np.argwhere((sites>=(siteMaskStart+1))*(sites<(siteMaskEnd+1))).flatten()
+sites = sites[mask]
+timestamps = timestamps[mask]
+
+for spikeIdx in tqdm(range(len(timestamps))):
+    # if spikeIdx > 3500:
+    #     break
+    # if spikeIdx%1000==999:
+    #     print(spikeIdx/timestamps)
+    start = (timestamps[spikeIdx].astype('uint32') - before-1)*numBinaryFileChannels
+    end = (timestamps[spikeIdx].astype('uint32') + after-1)*numBinaryFileChannels
+    eventData = dataBinary[start:end].reshape((before+after, numBinaryFileChannels))
+    outputRawWaveformFile[spikeIdx] = eventData[:, siteStart:siteEnd].T*-1
