@@ -47,6 +47,7 @@ for n = 1:length(dataFiles)
     
     % EDIT You'll need to configure here to extract the ni channels you want
     CatGTpart3 = ({'-prb_fld -t_miss_ok ^' '-ap -ni ^' '-prb=0 ^' '-apfilter=butter,12,600,6000 ^' '-gblcar ^' '-xa=0,0,1,2,1,0  ^' '-xia=0,0,3,0.5,1,0 ^' '-xa=0,0,4,4,3,500 ^'}); %get part 3
+    %CatGTpart3 = ({'-prb_fld -t_miss_ok ^' '-ni ^' '-prb=0 ^' '-xa=0,0,1,2,1,0  ^' '-xia=0,0,5,0.5,1,0 ^' '-xa=0,0,4,4,3,500 ^'}); %get part 3
     CatGTpart3_str = sprintf('%s\n',CatGTpart3{:}); %get part 5
     
     CatGTpart4 = ['-dest=' destDir '\']; %get part 4

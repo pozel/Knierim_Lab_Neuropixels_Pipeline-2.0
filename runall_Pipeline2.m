@@ -17,18 +17,12 @@ beep on;
 [dataPath] = runall_TPrime(dataPath);
 beep;
 
-%% Run Artifact Removal Steps (for PO)
-% To customize, see 'EDIT' sections in individual functions.
-
-% [dataPath] = runall_StimRemoval(dataPath);
-%beep;
-
 %% Run Spike Identification Steps
 % To customize, see 'EDIT' sections in individual functions.
 
 [dataPath] = runall_Coords(dataPath);
 [dataPath] = runall_DetectPeaks(dataPath);
-%runall_CalcParms(dataPath);
+runall_CalcParms(dataPath);
 beep;
 
 beep off;
