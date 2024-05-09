@@ -23,4 +23,6 @@ Calculates the output .Parms for Winclust from extracted spikes. See runall_Calc
 Step 5
 Csv2pos to get .pos files for clustering. Relatively similar to csv2pos for other applications, however uses NP information to populate the header.
 
+Sample data from hippocampus has been added here for use.
+
 
